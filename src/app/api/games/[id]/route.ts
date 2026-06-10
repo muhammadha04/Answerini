@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { assignFixedPin, clearFixedPin } from "@/lib/fixed-pin";
 import { rowToQuestion } from "@/lib/saved-games";
 
 type Params = { params: Promise<{ id: string }> };
@@ -36,6 +37,7 @@ export async function GET(_request: Request, { params }: Params) {
       title: data.title,
       description: data.description,
       settings: data.settings,
+      fixedPin: data.fixed_pin ?? null,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     },
@@ -55,6 +57,28 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const body = await request.json();
+
+  if (body.enableFixedPin === true) {
+    const result = await assignFixedPin(
+      supabase,
+      id,
+      user.id,
+      body.customPin as string | undefined
+    );
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+    return NextResponse.json({ fixedPin: result.pin });
+  }
+
+  if (body.enableFixedPin === false) {
+    const result = await clearFixedPin(supabase, id, user.id);
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+    return NextResponse.json({ fixedPin: null });
+  }
+
   const updates: Record<string, unknown> = {};
   if (body.title !== undefined) updates.title = String(body.title).trim();
   if (body.description !== undefined) updates.description = String(body.description).trim();

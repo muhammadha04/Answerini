@@ -161,7 +161,17 @@ alter table public.live_rooms enable row level security;
 -- No client policies: only the server (service role) reads/writes live rooms.
 
 -- ---------------------------------------------------------------------------
--- 5. Updated_at trigger for saved_games
+-- 5. Permanent room code (optional fixed PIN per saved game)
+-- ---------------------------------------------------------------------------
+alter table public.saved_games
+  add column if not exists fixed_pin text;
+
+create unique index if not exists saved_games_fixed_pin_unique
+  on public.saved_games (fixed_pin)
+  where fixed_pin is not null;
+
+-- ---------------------------------------------------------------------------
+-- 6. Updated_at trigger for saved_games
 -- ---------------------------------------------------------------------------
 create or replace function public.set_updated_at()
 returns trigger

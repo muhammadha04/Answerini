@@ -8,6 +8,7 @@ type GameRow = {
   id: string;
   title: string;
   description: string;
+  fixed_pin: string | null;
   updated_at: string;
   saved_questions: { count: number }[];
 };
@@ -74,6 +75,9 @@ export function HostLibrary({ games }: Props) {
                 <p className="text-sm text-white/60">
                   {qCount} question{qCount !== 1 ? "s" : ""} · Updated{" "}
                   {new Date(game.updated_at).toLocaleDateString()}
+                  {game.fixed_pin && (
+                    <span className="ml-2 font-mono text-yellow-300">PIN {game.fixed_pin}</span>
+                  )}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -89,7 +93,11 @@ export function HostLibrary({ games }: Props) {
                   disabled={startingId === game.id || qCount === 0}
                   className="rounded-xl bg-green-500 px-4 py-2 text-sm font-bold hover:bg-green-400 disabled:opacity-40"
                 >
-                  {startingId === game.id ? "Starting…" : "Go Live"}
+                  {startingId === game.id
+                    ? "Opening…"
+                    : game.fixed_pin
+                      ? "Open lobby"
+                      : "Go Live"}
                 </button>
               </div>
             </li>

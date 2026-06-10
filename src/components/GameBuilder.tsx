@@ -1,5 +1,6 @@
 "use client";
 
+import { InvitePanel } from "@/components/InvitePanel";
 import { QuestionEditor } from "@/components/QuestionEditor";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,11 +14,15 @@ type Props = {
 export function GameBuilder({ gameId }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState("");
+  const [fixedPin, setFixedPin] = useState<string | null>(null);
+  const [customPinInput, setCustomPinInput] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
   const [goingLive, setGoingLive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lobbyOpen, setLobbyOpen] = useState(false);
 
   const loadGame = useCallback(async () => {
     const res = await fetch(`/api/games/${gameId}`);
@@ -28,6 +33,7 @@ export function GameBuilder({ gameId }: Props) {
     }
     const data = await res.json();
     setTitle(data.game.title);
+    setFixedPin(data.game.fixedPin ?? null);
     setQuestions(data.questions);
     setLoading(false);
   }, [gameId]);
@@ -44,6 +50,39 @@ export function GameBuilder({ gameId }: Props) {
       body: JSON.stringify({ title }),
     });
     setSaving(false);
+  };
+
+  const enableFixedPin = async (custom?: string) => {
+    setPinLoading(true);
+    setError(null);
+    const res = await fetch(`/api/games/${gameId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        enableFixedPin: true,
+        ...(custom ? { customPin: custom } : {}),
+      }),
+    });
+    const data = await res.json();
+    setPinLoading(false);
+    if (!res.ok) {
+      setError(data.error ?? "Failed to set permanent code");
+      return;
+    }
+    setFixedPin(data.fixedPin);
+    setCustomPinInput("");
+  };
+
+  const disableFixedPin = async () => {
+    setPinLoading(true);
+    await fetch(`/api/games/${gameId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enableFixedPin: false }),
+    });
+    setFixedPin(null);
+    setLobbyOpen(false);
+    setPinLoading(false);
   };
 
   const addQuestion = async (q: {
@@ -69,9 +108,9 @@ export function GameBuilder({ gameId }: Props) {
     await loadGame();
   };
 
-  const goLive = async () => {
+  const openLobby = async (navigate = true) => {
     if (questions.length === 0) {
-      setError("Add at least one question before going live.");
+      setError("Add at least one question before opening the lobby.");
       return;
     }
     setGoingLive(true);
@@ -85,11 +124,12 @@ export function GameBuilder({ gameId }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Failed to start live game");
+        setError(data.error ?? "Failed to open lobby");
         return;
       }
       localStorage.setItem(`answerini-host-${data.pin}`, data.hostToken);
-      router.push(`/host/${data.pin}`);
+      setLobbyOpen(true);
+      if (navigate) router.push(`/host/${data.pin}`);
     } finally {
       setGoingLive(false);
     }
@@ -141,6 +181,76 @@ export function GameBuilder({ gameId }: Props) {
         </div>
       </div>
 
+      <div className="rounded-2xl bg-white/10 p-5">
+        <h3 className="mb-1 font-bold text-white">Permanent room code</h3>
+        <p className="mb-4 text-sm text-white/60">
+          Use the same PIN every time you host this game. Share the link and QR with players days
+          before — open the lobby when you&apos;re ready for them to join.
+        </p>
+
+        {fixedPin ? (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-white/10 px-4 py-3 text-center">
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/50">
+                Your permanent code
+              </p>
+              <p className="font-mono text-4xl font-black tracking-[0.35em] text-yellow-300">
+                {fixedPin}
+              </p>
+            </div>
+
+            <InvitePanel pin={fixedPin} />
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => openLobby(true)}
+                disabled={goingLive || questions.length === 0}
+                className="rounded-xl bg-green-500 px-4 py-2 font-bold text-white hover:bg-green-400 disabled:opacity-40"
+              >
+                {goingLive ? "Opening…" : lobbyOpen ? "Go to host dashboard" : "Open lobby"}
+              </button>
+              <button
+                type="button"
+                onClick={disableFixedPin}
+                disabled={pinLoading}
+                className="rounded-xl bg-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/20"
+              >
+                Use random codes instead
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => enableFixedPin()}
+              disabled={pinLoading}
+              className="w-full rounded-xl bg-purple-600 py-3 font-bold text-white hover:bg-purple-500 disabled:opacity-50"
+            >
+              {pinLoading ? "Generating…" : "Generate permanent room code"}
+            </button>
+            <div className="flex gap-2">
+              <input
+                value={customPinInput}
+                onChange={(e) => setCustomPinInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="Or choose 6 digits"
+                inputMode="numeric"
+                className="flex-1 rounded-xl border-0 bg-white/10 px-4 py-2 font-mono text-white outline-none focus:ring-2 focus:ring-purple-400"
+              />
+              <button
+                type="button"
+                onClick={() => enableFixedPin(customPinInput)}
+                disabled={pinLoading || customPinInput.length !== 6}
+                className="rounded-xl bg-white/15 px-4 py-2 font-bold disabled:opacity-40"
+              >
+                Set
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <QuestionEditor onAdd={addQuestion} />
 
       {questions.length > 0 && (
@@ -168,14 +278,16 @@ export function GameBuilder({ gameId }: Props) {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={goLive}
-        disabled={goingLive || questions.length === 0}
-        className="w-full rounded-2xl bg-green-500 py-4 text-xl font-black text-white hover:bg-green-400 disabled:opacity-40"
-      >
-        {goingLive ? "Starting live session…" : "Go Live with this Game"}
-      </button>
+      {!fixedPin && (
+        <button
+          type="button"
+          onClick={() => openLobby(true)}
+          disabled={goingLive || questions.length === 0}
+          className="w-full rounded-2xl bg-green-500 py-4 text-xl font-black text-white hover:bg-green-400 disabled:opacity-40"
+        >
+          {goingLive ? "Starting live session…" : "Go Live (random PIN)"}
+        </button>
+      )}
 
       <button
         type="button"

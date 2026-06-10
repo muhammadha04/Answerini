@@ -115,7 +115,7 @@ export async function createRoomFromSavedGame(
   savedGameId: string,
   userId: string,
   titleOverride?: string
-): Promise<{ room: Room; hostToken: string } | { error: string }> {
+): Promise<{ room: Room; hostToken: string; reused?: boolean } | { error: string }> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -138,15 +138,30 @@ export async function createRoomFromSavedGame(
   }
 
   const questions = questionRows.map(rowToQuestion);
+  const title = titleOverride?.trim() || data.title;
+  const pin = data.fixed_pin ?? generatePin();
+
+  const existing = await getRoomByPin(pin);
+  if (existing) {
+    if (existing.savedGameId && existing.savedGameId !== savedGameId) {
+      return { error: "This room code is linked to another game. Choose a different permanent code." };
+    }
+    if (!existing.savedGameId && data.fixed_pin) {
+      return { error: "This room code is already in use. Pick another permanent code." };
+    }
+    syncRoomFromSavedGame(existing, questions, title, data.settings, savedGameId);
+    await saveRoom(existing);
+    return { room: existing, hostToken: existing.hostToken, reused: true };
+  }
+
   const id = generateId();
-  const pin = generatePin();
   const hostToken = generateId();
 
   const room: Room = {
     id,
     pin,
     hostToken,
-    title: titleOverride?.trim() || data.title,
+    title,
     createdAt: Date.now(),
     phase: "lobby",
     settings: defaultSettings(data.settings),
@@ -162,7 +177,7 @@ export async function createRoomFromSavedGame(
   };
 
   await saveRoom(room);
-  return { room, hostToken };
+  return { room, hostToken, reused: false };
 }
 
 export async function joinRoom(
@@ -503,4 +518,28 @@ export function getPlayerRank(room: Room, playerId: string): PublicPlayer | null
   return state.players.find((p) => p.id === playerId) ?? null;
 }
 
-import { shuffleOptions } from "./shuffle";
+function syncRoomFromSavedGame(
+  room: Room,
+  questions: Question[],
+  title: string,
+  settings: RoomSettings,
+  savedGameId: string
+): void {
+  room.title = title;
+  room.settings = defaultSettings(settings);
+  room.questions = questions;
+  room.savedGameId = savedGameId;
+
+  if (room.phase === "finished") {
+    for (const player of Object.values(room.players)) {
+      player.score = 0;
+      player.streak = 0;
+    }
+    room.phase = "lobby";
+    room.currentQuestionIndex = 0;
+    room.currentAnswers = {};
+    room.questionStartedAt = null;
+    room.countdownStartedAt = null;
+    room.revealStartedAt = null;
+  }
+}

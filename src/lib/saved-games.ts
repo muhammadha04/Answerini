@@ -6,6 +6,7 @@ export type SavedGameRow = {
   title: string;
   description: string;
   settings: RoomSettings;
+  fixed_pin: string | null;
   created_at: string;
   updated_at: string;
 };
