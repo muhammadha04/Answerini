@@ -7,6 +7,7 @@ import { CountdownOverlay, TimerBar } from "@/components/TimerBar";
 import { Leaderboard } from "@/components/Leaderboard";
 import { WinnerPodium } from "@/components/WinnerPodium";
 import { LobbyScreen } from "@/components/LobbyScreen";
+import { RtlText } from "@/components/RtlText";
 import { useRoomState, useSession } from "@/hooks/useRoomState";
 import { useScoreSnapshots } from "@/hooks/useScoreSnapshots";
 import { COUNTDOWN_SECONDS } from "@/lib/constants";
@@ -21,10 +22,9 @@ export function PlayerGame({ pin }: Props) {
   const { state, error } = useRoomState(pin);
   const { value: playerId } = useSession(`answerini-player-${pin}`, "session");
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [lastPoints, setLastPoints] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const startScores = useScoreSnapshots(state);
+  const { startScores, questionStartScores } = useScoreSnapshots(state);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 200);
@@ -34,7 +34,6 @@ export function PlayerGame({ pin }: Props) {
   useEffect(() => {
     if (state?.phase === "question") {
       setSelectedOption(null);
-      setLastPoints(null);
     }
   }, [state?.phase, state?.currentQuestionIndex]);
 
@@ -54,8 +53,11 @@ export function PlayerGame({ pin }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerId, optionId }),
       });
-      const data = await res.json();
-      if (data.points !== undefined) setLastPoints(data.points);
+      if (!res.ok) {
+        const data = await res.json();
+        setSelectedOption(null);
+        throw new Error(data.error);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -147,10 +149,19 @@ export function PlayerGame({ pin }: Props) {
         <p className="text-sm font-semibold text-white/60">
           Question {state.currentQuestionIndex + 1} / {state.totalQuestions}
         </p>
-        <h2 className="mt-2 text-2xl font-black text-white md:text-3xl">{question.text}</h2>
+        <RtlText
+          as="h2"
+          text={question.text}
+          align="center"
+          className="mt-2 text-2xl font-black text-white md:text-3xl"
+        />
         {myRank && (
           <p className="mt-2 text-sm font-bold text-yellow-300">
-            Score: {myRank.score.toLocaleString()}
+            Score:{" "}
+            {(state.phase === "reveal"
+              ? (questionStartScores[myRank.id] ?? myRank.score)
+              : myRank.score
+            ).toLocaleString()}
           </p>
         )}
       </div>
@@ -162,9 +173,6 @@ export function PlayerGame({ pin }: Props) {
       {answered && !isReveal && (
         <div className="rounded-xl bg-white/10 py-4 text-center font-bold text-white">
           Answer locked in!
-          {lastPoints !== null && lastPoints > 0 && (
-            <span className="ml-2 text-yellow-300">+{lastPoints}</span>
-          )}
         </div>
       )}
 

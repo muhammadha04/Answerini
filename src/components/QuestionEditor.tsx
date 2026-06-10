@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isRtlText } from "@/lib/textDirection";
 
 type Props = {
   onAdd: (question: {
@@ -17,6 +18,7 @@ export function QuestionEditor({ onAdd }: Props) {
   const [correctIndex, setCorrectIndex] = useState(0);
   const [timeLimit, setTimeLimit] = useState(20);
   const [loading, setLoading] = useState(false);
+  const questionDir = isRtlText(text) ? "rtl" : text.length > 0 ? "ltr" : "auto";
 
   const updateOption = (i: number, value: string) => {
     const next = [...options];
@@ -49,27 +51,36 @@ export function QuestionEditor({ onAdd }: Props) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Question text"
-        className="w-full rounded-xl border-0 bg-white/10 px-4 py-3 text-white placeholder:text-white/40 focus:ring-2 focus:ring-purple-400 outline-none"
+        dir={questionDir}
+        className={`w-full rounded-xl border-0 bg-white/10 px-4 py-3 text-white placeholder:text-white/40 focus:ring-2 focus:ring-purple-400 outline-none ${
+          questionDir === "rtl" ? "text-right" : ""
+        }`}
         required
       />
       <div className="space-y-2">
-        {options.map((opt, i) => (
+        {options.map((opt, i) => {
+          const optionDir = isRtlText(opt) ? "rtl" : opt.length > 0 ? "ltr" : "auto";
+          return (
           <div key={i} className="flex items-center gap-2">
             <input
               type="radio"
               name="correct"
               checked={correctIndex === i}
               onChange={() => setCorrectIndex(i)}
-              className="h-4 w-4 accent-green-400"
+              className="h-4 w-4 shrink-0 accent-green-400"
             />
             <input
               value={opt}
               onChange={(e) => updateOption(i, e.target.value)}
               placeholder={`Answer ${i + 1}`}
-              className="flex-1 rounded-xl border-0 bg-white/10 px-4 py-2 text-white placeholder:text-white/40 focus:ring-2 focus:ring-purple-400 outline-none"
+              dir={optionDir}
+              className={`flex-1 rounded-xl border-0 bg-white/10 px-4 py-2 text-white placeholder:text-white/40 focus:ring-2 focus:ring-purple-400 outline-none ${
+                optionDir === "rtl" ? "text-right" : ""
+              }`}
             />
           </div>
-        ))}
+          );
+        })}
         <p className="text-xs text-white/50">Select the radio button for the correct answer</p>
       </div>
       <div className="flex items-center gap-3">

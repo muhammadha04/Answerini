@@ -7,6 +7,7 @@ import type { PublicRoomState } from "@/lib/types";
 export function useScoreSnapshots(state: PublicRoomState | null) {
   const prevAtQuestionRef = useRef<Record<string, number>>({});
   const [startScores, setStartScores] = useState<Record<string, number>>({});
+  const [questionStartScores, setQuestionStartScores] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!state) return;
@@ -17,6 +18,7 @@ export function useScoreSnapshots(state: PublicRoomState | null) {
         snap[p.id] = p.score;
       }
       prevAtQuestionRef.current = snap;
+      setQuestionStartScores(snap);
     }
 
     if (state.phase === "leaderboard" || state.phase === "finished") {
@@ -29,5 +31,5 @@ export function useScoreSnapshots(state: PublicRoomState | null) {
     state?.players,
   ]);
 
-  return startScores;
+  return { startScores, questionStartScores };
 }

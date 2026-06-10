@@ -5,6 +5,7 @@ import { AnswerButton } from "@/components/AnswerButton";
 import { CountdownOverlay, TimerBar } from "@/components/TimerBar";
 import { Leaderboard } from "@/components/Leaderboard";
 import { InvitePanel } from "@/components/InvitePanel";
+import { RtlText } from "@/components/RtlText";
 import { WinnerPodium } from "@/components/WinnerPodium";
 import { QuestionEditor } from "@/components/QuestionEditor";
 import { useRoomState, useSession } from "@/hooks/useRoomState";
@@ -19,7 +20,7 @@ type Props = {
 export function HostDashboard({ pin }: Props) {
   const { state, refresh } = useRoomState(pin);
   const { value: hostToken } = useSession(`answerini-host-${pin}`);
-  const startScores = useScoreSnapshots(state);
+  const { startScores } = useScoreSnapshots(state);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [savedGameId, setSavedGameId] = useState<string | null>(null);
   const [shortLink, setShortLink] = useState<string | null>(null);
@@ -138,11 +139,10 @@ export function HostDashboard({ pin }: Props) {
                 {questions.map((q, i) => (
                   <li
                     key={q.id}
-                    className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-2 text-white"
+                    className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-white"
                   >
-                    <span className="truncate">
-                      {i + 1}. {q.text}
-                    </span>
+                    <span className="shrink-0">{i + 1}.</span>
+                    <RtlText text={q.text} className="min-w-0 flex-1 truncate" />
                     {!savedGameId && (
                       <button
                         type="button"
@@ -200,7 +200,7 @@ export function HostDashboard({ pin }: Props) {
 
       {(state.phase === "question" || state.phase === "reveal") && question && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-black text-white">{question.text}</h2>
+          <RtlText as="h2" text={question.text} className="text-2xl font-black text-white" />
           {state.phase === "question" && <TimerBar seconds={timeLeft} total={question.timeLimit} />}
           <p className="text-white/70">
             {Object.values(state.answerStats).reduce((a, b) => a + b, 0)} / {state.playerCount}{" "}
@@ -220,13 +220,9 @@ export function HostDashboard({ pin }: Props) {
             ))}
           </div>
           {state.phase === "reveal" && (
-            <button
-              type="button"
-              onClick={() => hostAction("next")}
-              className="w-full rounded-xl bg-purple-500 py-3 font-bold text-white"
-            >
-              Show Leaderboard / Next
-            </button>
+            <p className="rounded-xl bg-purple-500/20 py-3 text-center font-semibold text-white">
+              Showing correct answer… Leaderboard up next
+            </p>
           )}
         </div>
       )}

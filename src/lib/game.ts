@@ -365,11 +365,7 @@ export async function tickRoom(pin: string): Promise<Room | null> {
     const elapsed = (now - room.revealStartedAt) / 1000;
     if (elapsed >= 3) {
       room.revealStartedAt = null;
-      if (room.settings.showLeaderboardAfterEach) {
-        room.phase = "leaderboard";
-      } else {
-        advanceToNextQuestion(room);
-      }
+      room.phase = "leaderboard";
       changed = true;
     }
   }
@@ -419,16 +415,6 @@ export async function hostNext(
 
   if (room.phase === "leaderboard") {
     advanceToNextQuestion(room);
-    await saveRoom(room);
-    return { room };
-  }
-
-  if (room.phase === "reveal") {
-    room.revealStartedAt = null;
-    room.phase = room.settings.showLeaderboardAfterEach ? "leaderboard" : "countdown";
-    if (room.phase === "countdown") {
-      advanceToNextQuestion(room);
-    }
     await saveRoom(room);
     return { room };
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { KAHOOT_COLORS, ANSWER_SHAPES } from "@/lib/constants";
+import { textDirectionProps } from "@/lib/textDirection";
 
 const COLORS = Object.values(KAHOOT_COLORS);
 
@@ -29,6 +30,7 @@ export function AnswerButton({
 }: Props) {
   const color = COLORS[index % COLORS.length];
   const shape = ANSWER_SHAPES[index % ANSWER_SHAPES.length];
+  const { dir, className: textDirClass } = textDirectionProps(text);
 
   let opacity = disabled && !selected ? 0.5 : 1;
   if (showResult && !correct && !wrong) opacity = 0.4;
@@ -52,7 +54,9 @@ export function AnswerButton({
       >
         {shape}
       </span>
-      <span className="flex-1">{text}</span>
+      <span dir={dir} className={`flex-1 ${textDirClass}`}>
+        {text}
+      </span>
       {showResult && correct && <span className="text-2xl">✓</span>}
       {showResult && wrong && <span className="text-2xl">✗</span>}
     </button>

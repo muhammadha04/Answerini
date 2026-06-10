@@ -2,6 +2,7 @@
 
 import { InvitePanel } from "@/components/InvitePanel";
 import { QuestionEditor } from "@/components/QuestionEditor";
+import { RtlText } from "@/components/RtlText";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -302,11 +303,10 @@ export function GameBuilder({ gameId }: Props) {
             {questions.map((q, i) => (
               <li
                 key={q.id}
-                className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-2 text-white"
+                className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-white"
               >
-                <span className="truncate">
-                  {i + 1}. {q.text}
-                </span>
+                <span className="shrink-0">{i + 1}.</span>
+                <RtlText text={q.text} className="min-w-0 flex-1 truncate" />
                 <button
                   type="button"
                   onClick={() => removeQuestion(q.id)}

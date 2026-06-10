@@ -12,7 +12,7 @@ export async function POST(
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
-    return NextResponse.json({ points: result.points, ok: true });
+    return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Failed to submit." }, { status: 500 });
   }
