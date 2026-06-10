@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnswerButton } from "@/components/AnswerButton";
 import { CountdownOverlay, TimerBar } from "@/components/TimerBar";
 import { Leaderboard } from "@/components/Leaderboard";
+import { InvitePanel } from "@/components/InvitePanel";
 import { QuestionEditor } from "@/components/QuestionEditor";
 import { useRoomState, useSession } from "@/hooks/useRoomState";
 import { COUNTDOWN_SECONDS } from "@/lib/constants";
@@ -104,6 +105,8 @@ export function HostDashboard({ pin }: Props) {
           <p className="text-lg font-bold capitalize text-white">{state.phase}</p>
         </div>
       </div>
+
+      <InvitePanel pin={pin} />
 
       {state.phase === "lobby" && (
         <>
