@@ -17,6 +17,7 @@ export function HostDashboard({ pin }: Props) {
   const { state, refresh } = useRoomState(pin);
   const { value: hostToken } = useSession(`answerini-host-${pin}`);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [savedGameId, setSavedGameId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -33,6 +34,7 @@ export function HostDashboard({ pin }: Props) {
       .then((r) => r.json())
       .then((data) => {
         if (data.questions) setQuestions(data.questions);
+        if (data.savedGameId) setSavedGameId(data.savedGameId);
       })
       .catch(() => {});
   }, [pin, hostToken, state?.version]);
@@ -105,11 +107,19 @@ export function HostDashboard({ pin }: Props) {
 
       {state.phase === "lobby" && (
         <>
-          <QuestionEditor
-            onAdd={async (q) => {
-              await hostAction("addQuestion", q);
-            }}
-          />
+          {!savedGameId && (
+            <QuestionEditor
+              onAdd={async (q) => {
+                await hostAction("addQuestion", q);
+              }}
+            />
+          )}
+
+          {savedGameId && questions.length > 0 && (
+            <p className="rounded-xl bg-green-500/20 px-4 py-3 text-center text-sm text-green-100">
+              Questions loaded from your saved game ({questions.length} total)
+            </p>
+          )}
 
           {questions.length > 0 && (
             <div className="rounded-2xl bg-white/5 p-4">
@@ -125,13 +135,15 @@ export function HostDashboard({ pin }: Props) {
                     <span className="truncate">
                       {i + 1}. {q.text}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => hostAction("removeQuestion", { questionId: q.id })}
-                      className="ml-2 shrink-0 text-red-400 hover:text-red-300"
-                    >
-                      Remove
-                    </button>
+                    {!savedGameId && (
+                      <button
+                        type="button"
+                        onClick={() => hostAction("removeQuestion", { questionId: q.id })}
+                        className="ml-2 shrink-0 text-red-400 hover:text-red-300"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

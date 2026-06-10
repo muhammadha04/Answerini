@@ -6,6 +6,8 @@ import {
 import { calculatePoints } from "./scoring";
 import { generateId, generatePin } from "./pin";
 import { getRoomByPin, saveRoom } from "./store";
+import { rowToQuestion } from "./saved-games";
+import { createClient } from "./supabase/server";
 import type {
   AddQuestionPayload,
   CreateRoomPayload,
@@ -91,7 +93,7 @@ export async function createRoom(payload: CreateRoomPayload): Promise<{
     id,
     pin,
     hostToken,
-    title: payload.title.trim() || "Answerini Game",
+    title: payload.title?.trim() || "Answerini Game",
     createdAt: Date.now(),
     phase: "lobby",
     settings: defaultSettings(payload.settings),
@@ -102,6 +104,60 @@ export async function createRoom(payload: CreateRoomPayload): Promise<{
     questionStartedAt: null,
     countdownStartedAt: null,
     revealStartedAt: null,
+    version: 0,
+  };
+
+  await saveRoom(room);
+  return { room, hostToken };
+}
+
+export async function createRoomFromSavedGame(
+  savedGameId: string,
+  userId: string,
+  titleOverride?: string
+): Promise<{ room: Room; hostToken: string } | { error: string }> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("saved_games")
+    .select("*, saved_questions(*)")
+    .eq("id", savedGameId)
+    .eq("user_id", userId)
+    .single();
+
+  if (error || !data) {
+    return { error: "Saved game not found." };
+  }
+
+  const questionRows = (data.saved_questions ?? []).sort(
+    (a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order
+  );
+
+  if (questionRows.length === 0) {
+    return { error: "Add at least one question to this saved game first." };
+  }
+
+  const questions = questionRows.map(rowToQuestion);
+  const id = generateId();
+  const pin = generatePin();
+  const hostToken = generateId();
+
+  const room: Room = {
+    id,
+    pin,
+    hostToken,
+    title: titleOverride?.trim() || data.title,
+    createdAt: Date.now(),
+    phase: "lobby",
+    settings: defaultSettings(data.settings),
+    questions,
+    currentQuestionIndex: 0,
+    players: {},
+    currentAnswers: {},
+    questionStartedAt: null,
+    countdownStartedAt: null,
+    revealStartedAt: null,
+    savedGameId: savedGameId,
     version: 0,
   };
 

@@ -27,7 +27,7 @@ export default function HomePage() {
         >
           <span className="text-4xl">🎯</span>
           <h2 className="mt-4 text-2xl font-black">Host a Game</h2>
-          <p className="mt-2 text-white/80">Create questions and run the show</p>
+          <p className="mt-2 text-white/80">Login, build saved quizzes, go live</p>
         </Link>
       </div>
 

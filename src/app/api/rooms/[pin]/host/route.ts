@@ -88,5 +88,6 @@ export async function GET(
     questions: room.questions,
     settings: room.settings,
     hostToken: room.hostToken,
+    savedGameId: room.savedGameId ?? null,
   });
 }

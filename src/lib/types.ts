@@ -61,6 +61,7 @@ export type Room = {
   countdownStartedAt: number | null;
   revealStartedAt: number | null;
   version: number;
+  savedGameId?: string;
 };
 
 export type PublicPlayer = {
@@ -98,9 +99,10 @@ export type PublicQuestion = {
 };
 
 export type CreateRoomPayload = {
-  title: string;
+  title?: string;
   hostName?: string;
   settings?: Partial<RoomSettings>;
+  savedGameId?: string;
 };
 
 export type JoinRoomPayload = {

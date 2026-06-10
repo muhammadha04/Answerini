@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { AuthNav } from "@/components/AuthNav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,16 +33,11 @@ export default function RootLayout({
             <Link href="/" className="text-xl font-black tracking-tight">
               Answer<span className="text-yellow-300">ini</span>
             </Link>
-            <nav className="flex gap-4 text-sm font-semibold">
+            <nav className="flex items-center gap-4 text-sm font-semibold">
               <Link href="/join" className="text-white/80 hover:text-white">
                 Join
               </Link>
-              <Link
-                href="/host"
-                className="rounded-full bg-white/15 px-4 py-1.5 hover:bg-white/25"
-              >
-                Host
-              </Link>
+              <AuthNav />
             </nav>
           </div>
         </header>
