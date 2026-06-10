@@ -26,9 +26,6 @@ export function Leaderboard({
   const [revealedRows, setRevealedRows] = useState(0);
   const introPlayed = useRef(false);
 
-  // Reveal from last place (#5) to first (#1) for suspense
-  const revealOrder = [...list].reverse();
-
   useEffect(() => {
     if (!animated) {
       setRevealedRows(list.length);
@@ -58,9 +55,9 @@ export function Leaderboard({
     <div className="leaderboard-enter w-full max-w-lg mx-auto">
       <h2 className="mb-6 text-center text-3xl font-black text-white drop-shadow-lg">{title}</h2>
       <ul className="space-y-3">
-        {revealOrder.map((player, reverseIndex) => {
-          const i = list.length - 1 - reverseIndex;
-          const isVisible = !animated || reverseIndex < revealedRows;
+        {list.map((player, i) => {
+          // Rank 1 stays at top; reveal from #5 (bottom) up to #1 (top)
+          const isVisible = !animated || list.length - i <= revealedRows;
           const isHighlight = player.id === highlightId;
           const medals = ["🥇", "🥈", "🥉"];
           const medal = i < 3 ? medals[i] : null;
@@ -78,7 +75,7 @@ export function Leaderboard({
                     ? "bg-gradient-to-r from-yellow-500/30 to-amber-500/20 text-white ring-1 ring-yellow-400/50"
                     : "bg-white/15 text-white backdrop-blur"
               }`}
-              style={{ transitionDelay: `${reverseIndex * 50}ms` }}
+              style={{ transitionDelay: `${(list.length - 1 - i) * 50}ms` }}
             >
               <span className="flex min-w-0 items-center gap-3">
                 <span
