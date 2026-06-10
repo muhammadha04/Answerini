@@ -170,6 +170,9 @@ create unique index if not exists saved_games_fixed_pin_unique
   on public.saved_games (fixed_pin)
   where fixed_pin is not null;
 
+alter table public.saved_games
+  add column if not exists short_link text;
+
 -- ---------------------------------------------------------------------------
 -- 6. Updated_at trigger for saved_games
 -- ---------------------------------------------------------------------------

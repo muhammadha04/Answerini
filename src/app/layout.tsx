@@ -15,9 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Answerini — Free Live Quiz Platform",
-  description:
-    "Host live quiz games for up to 500 players. A free Kahoot alternative with rooms, real-time scoring, and leaderboards.",
+  title: "Answerini — Live Quiz Platform",
+  description: "Host live quiz games with rooms, real-time scoring, and leaderboards.",
 };
 
 export default function RootLayout({
@@ -27,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
-      <body className="min-h-full antialiased">
+      <body className="flex min-h-full flex-col antialiased">
         <header className="border-b border-white/10 bg-black/20 backdrop-blur">
           <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
             <Link href="/" className="text-xl font-black tracking-tight">
@@ -41,7 +40,10 @@ export default function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+        <footer className="border-t border-white/10 py-4 text-center text-sm text-white/50">
+          Made by Bothyna Hakroush
+        </footer>
       </body>
     </html>
   );

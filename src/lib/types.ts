@@ -62,6 +62,7 @@ export type Room = {
   revealStartedAt: number | null;
   version: number;
   savedGameId?: string;
+  shortLink?: string | null;
 };
 
 export type PublicPlayer = {

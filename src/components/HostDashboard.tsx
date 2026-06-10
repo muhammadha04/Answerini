@@ -22,6 +22,7 @@ export function HostDashboard({ pin }: Props) {
   const startScores = useScoreSnapshots(state);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [savedGameId, setSavedGameId] = useState<string | null>(null);
+  const [shortLink, setShortLink] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -39,6 +40,7 @@ export function HostDashboard({ pin }: Props) {
       .then((data) => {
         if (data.questions) setQuestions(data.questions);
         if (data.savedGameId) setSavedGameId(data.savedGameId);
+        if (data.shortLink !== undefined) setShortLink(data.shortLink);
       })
       .catch(() => {});
   }, [pin, hostToken, state?.version]);
@@ -109,7 +111,7 @@ export function HostDashboard({ pin }: Props) {
         </div>
       </div>
 
-      <InvitePanel pin={pin} />
+      <InvitePanel pin={pin} shortLink={shortLink} />
 
       {state.phase === "lobby" && (
         <>

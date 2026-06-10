@@ -38,6 +38,7 @@ export async function GET(_request: Request, { params }: Params) {
       description: data.description,
       settings: data.settings,
       fixedPin: data.fixed_pin ?? null,
+      shortLink: data.short_link ?? null,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     },
@@ -83,6 +84,10 @@ export async function PATCH(request: Request, { params }: Params) {
   if (body.title !== undefined) updates.title = String(body.title).trim();
   if (body.description !== undefined) updates.description = String(body.description).trim();
   if (body.settings !== undefined) updates.settings = body.settings;
+  if (body.shortLink !== undefined) {
+    const raw = String(body.shortLink).trim();
+    updates.short_link = raw.length > 0 ? raw.slice(0, 120) : null;
+  }
 
   const { data, error } = await supabase
     .from("saved_games")

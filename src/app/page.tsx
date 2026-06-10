@@ -30,19 +30,6 @@ export default function HomePage() {
           <p className="mt-2 text-white/80">Login, build saved quizzes, go live</p>
         </Link>
       </div>
-
-      <div className="max-w-xl space-y-3 text-sm text-white/60">
-        <p>
-          Answerini is a free alternative to Kahoot — no player limits on paid tiers,
-          no account required for players, and built for large events (300+ participants).
-        </p>
-        <ul className="flex flex-wrap justify-center gap-x-6 gap-y-1">
-          <li>✓ Real-time scoring</li>
-          <li>✓ Top 5 leaderboards</li>
-          <li>✓ Speed-based points</li>
-          <li>✓ Vercel-ready</li>
-        </ul>
-      </div>
     </div>
   );
 }

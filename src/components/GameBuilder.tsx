@@ -15,6 +15,7 @@ export function GameBuilder({ gameId }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [fixedPin, setFixedPin] = useState<string | null>(null);
+  const [shortLink, setShortLink] = useState("");
   const [customPinInput, setCustomPinInput] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +35,7 @@ export function GameBuilder({ gameId }: Props) {
     const data = await res.json();
     setTitle(data.game.title);
     setFixedPin(data.game.fixedPin ?? null);
+    setShortLink(data.game.shortLink ?? "");
     setQuestions(data.questions);
     setLoading(false);
   }, [gameId]);
@@ -41,6 +43,20 @@ export function GameBuilder({ gameId }: Props) {
   useEffect(() => {
     loadGame();
   }, [loadGame]);
+
+  const saveShortLink = async () => {
+    setSaving(true);
+    const res = await fetch(`/api/games/${gameId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shortLink }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Failed to save short link");
+    }
+  };
 
   const saveTitle = async () => {
     setSaving(true);
@@ -182,6 +198,32 @@ export function GameBuilder({ gameId }: Props) {
       </div>
 
       <div className="rounded-2xl bg-white/10 p-5">
+        <label className="mb-1 block text-sm font-semibold text-white/70">
+          Short invite link (optional)
+        </label>
+        <p className="mb-3 text-sm text-white/60">
+          e.g. bit.ly/b112003 — shown in bold under the PIN on the QR screen. Point it to your join
+          link in Bitly (or similar) first.
+        </p>
+        <div className="flex gap-2">
+          <input
+            value={shortLink}
+            onChange={(e) => setShortLink(e.target.value.slice(0, 120))}
+            placeholder="bit.ly/b112003"
+            className="flex-1 rounded-xl border-0 bg-white/10 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <button
+            type="button"
+            onClick={saveShortLink}
+            disabled={saving}
+            className="rounded-xl bg-white/15 px-4 py-2 font-bold hover:bg-white/25 disabled:opacity-50"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl bg-white/10 p-5">
         <h3 className="mb-1 font-bold text-white">Permanent room code</h3>
         <p className="mb-4 text-sm text-white/60">
           Use the same PIN every time you host this game. Share the link and QR with players days
@@ -199,7 +241,7 @@ export function GameBuilder({ gameId }: Props) {
               </p>
             </div>
 
-            <InvitePanel pin={fixedPin} />
+            <InvitePanel pin={fixedPin} shortLink={shortLink || null} />
 
             <div className="flex flex-wrap gap-2">
               <button

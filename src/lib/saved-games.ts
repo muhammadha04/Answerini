@@ -7,6 +7,7 @@ export type SavedGameRow = {
   description: string;
   settings: RoomSettings;
   fixed_pin: string | null;
+  short_link: string | null;
   created_at: string;
   updated_at: string;
 };

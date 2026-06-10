@@ -149,7 +149,7 @@ export async function createRoomFromSavedGame(
     if (!existing.savedGameId && data.fixed_pin) {
       return { error: "This room code is already in use. Pick another permanent code." };
     }
-    syncRoomFromSavedGame(existing, questions, title, data.settings, savedGameId);
+    syncRoomFromSavedGame(existing, questions, title, data.settings, savedGameId, data.short_link);
     await saveRoom(existing);
     return { room: existing, hostToken: existing.hostToken, reused: true };
   }
@@ -173,6 +173,7 @@ export async function createRoomFromSavedGame(
     countdownStartedAt: null,
     revealStartedAt: null,
     savedGameId: savedGameId,
+    shortLink: data.short_link ?? null,
     version: 0,
   };
 
@@ -523,12 +524,14 @@ function syncRoomFromSavedGame(
   questions: Question[],
   title: string,
   settings: RoomSettings,
-  savedGameId: string
+  savedGameId: string,
+  shortLink?: string | null
 ): void {
   room.title = title;
   room.settings = defaultSettings(settings);
   room.questions = questions;
   room.savedGameId = savedGameId;
+  room.shortLink = shortLink ?? null;
 
   if (room.phase === "finished") {
     for (const player of Object.values(room.players)) {

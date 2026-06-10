@@ -1,27 +1,58 @@
 "use client";
 
-import { getJoinUrl } from "@/lib/join-url";
+import {
+  formatShortLinkDisplay,
+  getJoinUrl,
+  normalizeShortLink,
+} from "@/lib/join-url";
 import { useCallback, useMemo, useState } from "react";
 import QRCode from "react-qr-code";
 
 type Props = {
   pin: string;
+  shortLink?: string | null;
 };
 
-export function InvitePanel({ pin }: Props) {
-  const [copied, setCopied] = useState<"link" | "pin" | null>(null);
+function InviteLinks({
+  pin,
+  shortLink,
+  joinUrl,
+}: {
+  pin: string;
+  shortLink?: string | null;
+  joinUrl: string;
+}) {
+  const shortDisplay = shortLink ? formatShortLinkDisplay(shortLink) : null;
+
+  return (
+    <>
+      <p className="font-mono text-4xl font-black tracking-[0.35em] text-[#46178f]">{pin}</p>
+      {shortDisplay && (
+        <p className="mt-3 text-center text-xl font-black text-[#46178f]">{shortDisplay}</p>
+      )}
+      <p className="mt-2 max-w-xs text-center text-sm text-gray-500 break-all">{joinUrl}</p>
+    </>
+  );
+}
+
+export function InvitePanel({ pin, shortLink }: Props) {
+  const [copied, setCopied] = useState<"link" | "pin" | "short" | null>(null);
   const [showInlineQr, setShowInlineQr] = useState(false);
   const [fullscreenQr, setFullscreenQr] = useState(false);
 
   const joinUrl = useMemo(() => getJoinUrl(pin), [pin]);
+  const qrUrl = useMemo(
+    () => (shortLink ? normalizeShortLink(shortLink) : joinUrl),
+    [shortLink, joinUrl]
+  );
+  const shortDisplay = shortLink ? formatShortLinkDisplay(shortLink) : null;
 
-  const copy = useCallback(async (text: string, kind: "link" | "pin") => {
+  const copy = useCallback(async (text: string, kind: "link" | "pin" | "short") => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(kind);
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      // fallback for older browsers
       const ta = document.createElement("textarea");
       ta.value = text;
       document.body.appendChild(ta);
@@ -51,6 +82,15 @@ export function InvitePanel({ pin }: Props) {
           >
             {copied === "link" ? "Copied!" : "Copy invite link"}
           </button>
+          {shortLink && (
+            <button
+              type="button"
+              onClick={() => copy(normalizeShortLink(shortLink), "short")}
+              className="rounded-xl bg-[#1368CE]/80 px-4 py-2 text-sm font-bold text-white hover:bg-blue-600"
+            >
+              {copied === "short" ? "Copied!" : "Copy short link"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => copy(pin, "pin")}
@@ -76,9 +116,12 @@ export function InvitePanel({ pin }: Props) {
 
         {showInlineQr && (
           <div className="mt-4 flex flex-col items-center gap-2 rounded-xl bg-white p-4">
-            <QRCode value={joinUrl} size={160} level="M" />
+            <QRCode value={qrUrl} size={160} level="M" />
             <p className="font-mono text-lg font-black tracking-widest text-[#46178f]">{pin}</p>
-            <p className="text-xs text-gray-500">Scan to join with PIN pre-filled</p>
+            {shortDisplay && (
+              <p className="text-base font-black text-[#46178f]">{shortDisplay}</p>
+            )}
+            <p className="max-w-xs text-center text-xs text-gray-500 break-all">{joinUrl}</p>
           </div>
         )}
       </div>
@@ -110,15 +153,12 @@ export function InvitePanel({ pin }: Props) {
             <p className="mb-6 text-center text-lg font-bold text-[#46178f]">Answerini</p>
 
             <div className="rounded-2xl border-4 border-[#46178f]/20 p-4">
-              <QRCode value={joinUrl} size={280} level="M" />
+              <QRCode value={qrUrl} size={280} level="M" />
             </div>
 
-            <p className="mt-6 font-mono text-4xl font-black tracking-[0.35em] text-[#46178f]">
-              {pin}
-            </p>
-            <p className="mt-2 max-w-xs text-center text-sm text-gray-500 break-all">
-              {joinUrl}
-            </p>
+            <div className="mt-6 text-center">
+              <InviteLinks pin={pin} shortLink={shortLink} joinUrl={joinUrl} />
+            </div>
 
             <button
               type="button"

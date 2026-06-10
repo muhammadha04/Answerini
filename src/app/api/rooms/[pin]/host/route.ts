@@ -89,5 +89,6 @@ export async function GET(
     settings: room.settings,
     hostToken: room.hostToken,
     savedGameId: room.savedGameId ?? null,
+    shortLink: room.shortLink ?? null,
   });
 }
