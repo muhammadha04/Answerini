@@ -127,6 +127,23 @@ export async function deleteRoom(id: string, pin: string): Promise<void> {
   pinIndex.delete(pin);
 }
 
+/** Remove live session data for a PIN (e.g. when a saved game with a permanent code is deleted). */
+export async function deleteLiveRoomByPin(pin: string): Promise<void> {
+  if (redis) {
+    const id = await redis.get<string>(pinKey(pin));
+    if (id) await redis.del(roomKey(id), pinKey(pin));
+    else await redis.del(pinKey(pin));
+    return;
+  }
+
+  const fromSupabase = await getRoomByPinSupabase(pin);
+  await deleteRoomSupabase(pin);
+
+  const memId = pinIndex.get(pin) ?? fromSupabase?.id;
+  if (memId) memoryStore.delete(memId);
+  pinIndex.delete(pin);
+}
+
 export function isUsingRedis(): boolean {
   return redis !== null;
 }

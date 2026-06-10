@@ -5,7 +5,8 @@ import {
 } from "./constants";
 import { calculatePoints } from "./scoring";
 import { generateId, generatePin } from "./pin";
-import { getRoomByPin, saveRoom } from "./store";
+import { releaseOrphanedLiveRoom } from "./fixed-pin";
+import { deleteLiveRoomByPin, getRoomByPin, saveRoom } from "./store";
 import { rowToQuestion } from "./saved-games";
 import { createClient } from "./supabase/server";
 import type {
@@ -141,7 +142,23 @@ export async function createRoomFromSavedGame(
   const title = titleOverride?.trim() || data.title;
   const pin = data.fixed_pin ?? generatePin();
 
-  const existing = await getRoomByPin(pin);
+  if (data.fixed_pin) {
+    await releaseOrphanedLiveRoom(supabase, pin);
+  }
+
+  let existing = await getRoomByPin(pin);
+  if (existing?.savedGameId && existing.savedGameId !== savedGameId) {
+    const { data: ownerGame } = await supabase
+      .from("saved_games")
+      .select("id")
+      .eq("id", existing.savedGameId)
+      .maybeSingle();
+    if (!ownerGame) {
+      await deleteLiveRoomByPin(pin);
+      existing = null;
+    }
+  }
+
   if (existing) {
     if (existing.savedGameId && existing.savedGameId !== savedGameId) {
       return { error: "This room code is linked to another game. Choose a different permanent code." };

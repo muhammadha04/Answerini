@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { assignFixedPin, clearFixedPin } from "@/lib/fixed-pin";
+import { deleteLiveRoomByPin } from "@/lib/store";
 import { rowToQuestion } from "@/lib/saved-games";
 
 type Params = { params: Promise<{ id: string }> };
@@ -115,10 +116,21 @@ export async function DELETE(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { data: game } = await supabase
+    .from("saved_games")
+    .select("fixed_pin")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
   const { error } = await supabase.from("saved_games").delete().eq("id", id).eq("user_id", user.id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (game?.fixed_pin) {
+    await deleteLiveRoomByPin(game.fixed_pin);
   }
 
   return NextResponse.json({ ok: true });

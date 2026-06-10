@@ -1,21 +1,44 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generatePin, isValidPin } from "./pin";
-import { getRoomByPin } from "./store";
+import { deleteLiveRoomByPin, getRoomByPin } from "./store";
+
+/** Drop live room if its saved game was deleted (orphaned session). */
+export async function releaseOrphanedLiveRoom(
+  supabase: SupabaseClient,
+  pin: string
+): Promise<void> {
+  const live = await getRoomByPin(pin);
+  if (!live?.savedGameId) return;
+
+  const { data } = await supabase
+    .from("saved_games")
+    .select("id")
+    .eq("id", live.savedGameId)
+    .maybeSingle();
+
+  if (!data) {
+    await deleteLiveRoomByPin(pin);
+  }
+}
 
 async function isPinAvailable(
   supabase: SupabaseClient,
   pin: string,
   excludeGameId?: string
 ): Promise<boolean> {
+  await releaseOrphanedLiveRoom(supabase, pin);
+
   let query = supabase.from("saved_games").select("id").eq("fixed_pin", pin);
   if (excludeGameId) query = query.neq("id", excludeGameId);
   const { data } = await query.maybeSingle();
   if (data) return false;
 
   const live = await getRoomByPin(pin);
-  if (live && live.savedGameId !== excludeGameId) return false;
+  if (!live) return true;
 
-  return true;
+  if (live.savedGameId === excludeGameId) return true;
+
+  return false;
 }
 
 export async function generateUniqueFixedPin(
@@ -75,6 +98,13 @@ export async function clearFixedPin(
   gameId: string,
   userId: string
 ): Promise<{ error?: string }> {
+  const { data: game } = await supabase
+    .from("saved_games")
+    .select("fixed_pin")
+    .eq("id", gameId)
+    .eq("user_id", userId)
+    .single();
+
   const { error } = await supabase
     .from("saved_games")
     .update({ fixed_pin: null })
@@ -82,5 +112,10 @@ export async function clearFixedPin(
     .eq("user_id", userId);
 
   if (error) return { error: error.message };
+
+  if (game?.fixed_pin) {
+    await deleteLiveRoomByPin(game.fixed_pin);
+  }
+
   return {};
 }
