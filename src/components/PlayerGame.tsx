@@ -16,7 +16,7 @@ type Props = {
 
 export function PlayerGame({ pin }: Props) {
   const { state, error } = useRoomState(pin);
-  const { value: playerId } = useSession(`answerini-player-${pin}`);
+  const { value: playerId } = useSession(`answerini-player-${pin}`, "session");
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);

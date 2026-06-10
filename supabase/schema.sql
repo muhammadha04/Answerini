@@ -144,7 +144,24 @@ create policy "saved_questions_delete_own"
   );
 
 -- ---------------------------------------------------------------------------
--- 4. Updated_at trigger for saved_games
+-- 4. Live rooms (server-side only via service role — fixes Vercel serverless)
+-- Run this block if you already ran an older schema.sql without live_rooms.
+-- ---------------------------------------------------------------------------
+create table if not exists public.live_rooms (
+  pin text primary key,
+  room_id text not null,
+  room_data jsonb not null,
+  expires_at timestamptz not null,
+  updated_at timestamptz default now() not null
+);
+
+create index if not exists live_rooms_expires_at_idx on public.live_rooms (expires_at);
+
+alter table public.live_rooms enable row level security;
+-- No client policies: only the server (service role) reads/writes live rooms.
+
+-- ---------------------------------------------------------------------------
+-- 5. Updated_at trigger for saved_games
 -- ---------------------------------------------------------------------------
 create or replace function public.set_updated_at()
 returns trigger

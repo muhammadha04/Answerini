@@ -40,20 +40,21 @@ export function useRoomState(pin: string | null) {
   return { state, error, refresh: fetchState };
 }
 
-export function useSession(key: string) {
+export function useSession(key: string, type: "local" | "session" = "local") {
   const [value, setValue] = useState<string | null>(null);
+  const storage = type === "session" ? sessionStorage : localStorage;
 
   useEffect(() => {
-    setValue(localStorage.getItem(key));
-  }, [key]);
+    setValue(storage.getItem(key));
+  }, [key, storage]);
 
   const save = (v: string) => {
-    localStorage.setItem(key, v);
+    storage.setItem(key, v);
     setValue(v);
   };
 
   const remove = () => {
-    localStorage.removeItem(key);
+    storage.removeItem(key);
     setValue(null);
   };
 

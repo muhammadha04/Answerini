@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import { createRoom, createRoomFromSavedGame } from "@/lib/game";
 import { createClient } from "@/lib/supabase/server";
+import { getStoreBackend, isUsingPersistentStore } from "@/lib/store";
 import type { CreateRoomPayload } from "@/lib/types";
 
 export async function POST(request: Request) {
   try {
+    if (!isUsingPersistentStore() && process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        {
+          error:
+            "Live rooms need SUPABASE_SERVICE_ROLE_KEY or Upstash Redis on Vercel. Add them in project settings.",
+        },
+        { status: 503 }
+      );
+    }
+
     const body = (await request.json()) as CreateRoomPayload & { savedGameId?: string };
 
     if (body.savedGameId) {
@@ -28,6 +39,7 @@ export async function POST(request: Request) {
         hostToken: result.hostToken,
         title: result.room.title,
         questionCount: result.room.questions.length,
+        store: getStoreBackend(),
       });
     }
 
@@ -38,6 +50,7 @@ export async function POST(request: Request) {
       hostToken,
       title: room.title,
       questionCount: room.questions.length,
+      store: getStoreBackend(),
     });
   } catch {
     return NextResponse.json({ error: "Failed to create room." }, { status: 500 });

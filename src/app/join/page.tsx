@@ -16,7 +16,7 @@ export default function JoinPage() {
     setError(null);
 
     const cleanPin = pin.replace(/\s/g, "");
-    const existingId = localStorage.getItem(`answerini-player-${cleanPin}`);
+    const existingId = sessionStorage.getItem(`answerini-player-${cleanPin}`);
 
     try {
       const res = await fetch(`/api/rooms/${cleanPin}/join`, {
@@ -29,7 +29,7 @@ export default function JoinPage() {
         setError(data.error ?? "Could not join");
         return;
       }
-      localStorage.setItem(`answerini-player-${cleanPin}`, data.playerId);
+      sessionStorage.setItem(`answerini-player-${cleanPin}`, data.playerId);
       router.push(`/play/${cleanPin}`);
     } catch {
       setError("Network error. Try again.");
