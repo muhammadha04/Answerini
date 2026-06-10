@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --kahoot-purple: #46178f;
+  --kahoot-dark: #250057;
+  --kahoot-accent: #864cbf;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  background: linear-gradient(160deg, #46178f 0%, #250057 50%, #1a0040 100%);
+  min-height: 100vh;
+  color: white;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
