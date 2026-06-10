@@ -5,8 +5,10 @@ import { AnswerButton } from "@/components/AnswerButton";
 import { CountdownOverlay, TimerBar } from "@/components/TimerBar";
 import { Leaderboard } from "@/components/Leaderboard";
 import { InvitePanel } from "@/components/InvitePanel";
+import { WinnerPodium } from "@/components/WinnerPodium";
 import { QuestionEditor } from "@/components/QuestionEditor";
 import { useRoomState, useSession } from "@/hooks/useRoomState";
+import { useScoreSnapshots } from "@/hooks/useScoreSnapshots";
 import { COUNTDOWN_SECONDS } from "@/lib/constants";
 import type { Question } from "@/lib/types";
 
@@ -17,6 +19,7 @@ type Props = {
 export function HostDashboard({ pin }: Props) {
   const { state, refresh } = useRoomState(pin);
   const { value: hostToken } = useSession(`answerini-host-${pin}`);
+  const startScores = useScoreSnapshots(state);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [savedGameId, setSavedGameId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -228,7 +231,12 @@ export function HostDashboard({ pin }: Props) {
 
       {state.phase === "leaderboard" && (
         <div className="space-y-4">
-          <Leaderboard players={state.leaderboard} title="Top 5 — Leaderboard" />
+          <Leaderboard
+            key={`lb-${state.currentQuestionIndex}-${state.version}`}
+            players={state.leaderboard}
+            title="Top 5 — Leaderboard"
+            startScores={startScores}
+          />
           <button
             type="button"
             onClick={() => hostAction("next")}
@@ -243,11 +251,10 @@ export function HostDashboard({ pin }: Props) {
 
       {state.phase === "finished" && (
         <div className="space-y-4">
-          <h2 className="text-center text-3xl font-black text-white">Final Podium</h2>
-          <Leaderboard
+          <WinnerPodium
             players={state.players.slice(0, 10)}
-            title="Winners"
-            showAll
+            startScores={startScores}
+            title="Final Podium"
           />
           <button
             type="button"

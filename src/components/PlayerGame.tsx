@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatedScore } from "@/components/AnimatedScore";
 import { AnswerButton } from "@/components/AnswerButton";
 import { CountdownOverlay, TimerBar } from "@/components/TimerBar";
 import { Leaderboard } from "@/components/Leaderboard";
+import { WinnerPodium } from "@/components/WinnerPodium";
 import { LobbyScreen } from "@/components/LobbyScreen";
 import { useRoomState, useSession } from "@/hooks/useRoomState";
+import { useScoreSnapshots } from "@/hooks/useScoreSnapshots";
 import { COUNTDOWN_SECONDS } from "@/lib/constants";
 import { shuffleOptions } from "@/lib/shuffle";
 import type { AnswerOption } from "@/lib/types";
@@ -21,6 +24,7 @@ export function PlayerGame({ pin }: Props) {
   const [lastPoints, setLastPoints] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const startScores = useScoreSnapshots(state);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 200);
@@ -73,7 +77,7 @@ export function PlayerGame({ pin }: Props) {
     );
   }
 
-  const myRank = state.players.find((p) => p.id === playerId);
+  const myRank = state?.players.find((p) => p.id === playerId);
 
   if (state.phase === "lobby") {
     return <LobbyScreen pin={pin} playerCount={state.playerCount} title={state.title} />;
@@ -81,21 +85,11 @@ export function PlayerGame({ pin }: Props) {
 
   if (state.phase === "finished") {
     return (
-      <div className="flex flex-col items-center gap-8 py-8">
-        <h1 className="text-4xl font-black text-white">Game Over!</h1>
-        {myRank && (
-          <p className="text-xl text-white/80">
-            You finished <strong>#{myRank.rank}</strong> with{" "}
-            <strong>{myRank.score.toLocaleString()}</strong> points
-          </p>
-        )}
-        <Leaderboard
-          players={state.players.slice(0, 10)}
-          title="Final Standings"
-          highlightId={playerId ?? undefined}
-          showAll
-        />
-      </div>
+      <WinnerPodium
+        players={state.players.slice(0, 10)}
+        startScores={startScores}
+        highlightId={playerId ?? undefined}
+      />
     );
   }
 
@@ -109,13 +103,22 @@ export function PlayerGame({ pin }: Props) {
     return (
       <div className="flex flex-col items-center gap-6 py-8">
         <Leaderboard
+          key={`lb-${state.currentQuestionIndex}-${state.version}`}
           players={state.leaderboard}
           title="Top 5"
           highlightId={playerId ?? undefined}
+          startScores={startScores}
         />
         {myRank && myRank.rank! > 5 && (
           <p className="rounded-xl bg-white/10 px-6 py-3 font-bold text-white">
-            Your rank: #{myRank.rank} — {myRank.score.toLocaleString()} pts
+            Your rank: #{myRank.rank} —{" "}
+            <AnimatedScore
+              from={startScores[myRank.id] ?? myRank.score}
+              to={myRank.score}
+              duration={900}
+              delay={2800}
+            />{" "}
+            pts
           </p>
         )}
       </div>

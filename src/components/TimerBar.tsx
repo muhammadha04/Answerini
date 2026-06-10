@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import { sounds } from "@/lib/sounds";
+
 type Props = {
   seconds: number;
   total: number;
@@ -28,12 +31,22 @@ export function TimerBar({ seconds, total }: Props) {
 }
 
 export function CountdownOverlay({ value }: { value: number }) {
+  const prev = useRef(value);
+
+  useEffect(() => {
+    if (value !== prev.current) {
+      if (value <= 1) sounds.countdownGo();
+      else sounds.countdownBeep();
+      prev.current = value;
+    }
+  }, [value]);
+
   return (
     <div className="flex flex-col items-center justify-center gap-4">
       <p className="text-xl font-bold text-white/80">Get ready!</p>
       <div
         key={value}
-        className="flex h-32 w-32 animate-bounce items-center justify-center rounded-full bg-white text-6xl font-black text-[#46178f] shadow-2xl"
+        className="countdown-pop flex h-32 w-32 items-center justify-center rounded-full bg-white text-6xl font-black text-[#46178f] shadow-2xl"
       >
         {value}
       </div>
