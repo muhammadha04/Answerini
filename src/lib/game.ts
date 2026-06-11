@@ -25,6 +25,28 @@ function defaultSettings(overrides?: Partial<RoomSettings>): RoomSettings {
   return { ...DEFAULT_SETTINGS, ...overrides };
 }
 
+/** True when every connected player has submitted an answer for the current question. */
+export function allPlayersAnswered(room: Room): boolean {
+  const playerIds = Object.keys(room.players);
+  if (playerIds.length === 0) return false;
+  return playerIds.every((id) => room.currentAnswers[id] != null);
+}
+
+function completeQuestion(room: Room, skipReveal: boolean): void {
+  if (room.phase !== "question") return;
+  const question = room.questions[room.currentQuestionIndex];
+  if (!question) return;
+
+  applyScores(room, question);
+  if (skipReveal) {
+    room.phase = "leaderboard";
+    room.revealStartedAt = null;
+  } else {
+    room.phase = "reveal";
+    room.revealStartedAt = Date.now();
+  }
+}
+
 export function toPublicState(room: Room): PublicRoomState {
   const players = Object.values(room.players)
     .sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt)
@@ -350,12 +372,9 @@ export async function tickRoom(pin: string): Promise<Room | null> {
     const q = room.questions[room.currentQuestionIndex];
     if (q) {
       const elapsed = now - room.questionStartedAt;
-      const allAnswered =
-        Object.keys(room.currentAnswers).length >= Object.keys(room.players).length;
-      if (elapsed >= q.timeLimit * 1000 || allAnswered) {
-        applyScores(room, q);
-        room.phase = "reveal";
-        room.revealStartedAt = now;
+      const everyoneDone = allPlayersAnswered(room);
+      if (elapsed >= q.timeLimit * 1000 || everyoneDone) {
+        completeQuestion(room, everyoneDone);
         changed = true;
       }
     }
@@ -456,16 +475,12 @@ export async function submitAnswer(
   };
 
   player.lastSeen = now;
-  await saveRoom(room);
 
-  const allAnswered =
-    Object.keys(room.currentAnswers).length >= Object.keys(room.players).length;
-  if (allAnswered) {
-    await tickRoom(pin);
-    const updated = await getRoomByPin(pin);
-    return { room: updated!, points };
+  if (allPlayersAnswered(room)) {
+    completeQuestion(room, true);
   }
 
+  await saveRoom(room);
   return { room, points };
 }
 
@@ -479,6 +494,11 @@ export async function kickPlayer(
   if (room.hostToken !== hostToken) return { error: "Unauthorized." };
   delete room.players[playerId];
   delete room.currentAnswers[playerId];
+
+  if (room.phase === "question" && allPlayersAnswered(room)) {
+    completeQuestion(room, true);
+  }
+
   await saveRoom(room);
   return { room };
 }

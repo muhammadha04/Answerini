@@ -19,7 +19,7 @@ type Props = {
 };
 
 export function PlayerGame({ pin }: Props) {
-  const { state, error } = useRoomState(pin);
+  const { state, error, refresh } = useRoomState(pin);
   const { value: playerId } = useSession(`answerini-player-${pin}`, "session");
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -58,6 +58,7 @@ export function PlayerGame({ pin }: Props) {
         setSelectedOption(null);
         throw new Error(data.error);
       }
+      await refresh();
     } finally {
       setSubmitting(false);
     }
